@@ -7,7 +7,7 @@ from lema_bombeo import verificar_repeticiones
 from explicador import explicar_codigo
 
 # ------------------------------------
-# INTERFAZ STREAMLIT PRINCIPAL
+# INTERFAZ STREAMLIT PRINCIPAL ggg
 # ------------------------------------
 st.title("Simulador de Compilador Multilenguaje Embebido")
 
