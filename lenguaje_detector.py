@@ -6,25 +6,35 @@ def detectar_lenguajes_embebidos(codigo):
     Devuelve una lista de tuplas: (lenguaje, bloque de código)
     """
     bloques = []
+    actual = []
+    lenguaje_actual = None
 
-    # Patrones básicos por lenguaje
-    patron_python = r"(?:^|\n)(def |import |for |if |print\().*?(?=\n\S|$)"
-    patron_sql = r"(?:^|\n)(SELECT|INSERT|UPDATE|DELETE|CREATE|DROP|ALTER|JOIN).*?(?=;|\n\S|$)"
-    patron_r = r"(?:^|\n)([a-zA-Z_]\w*\s*<-\s*|library\(|function\(|plot\().*?(?=\n\S|$)"
+    lineas = codigo.strip().split('\n')
 
-    # Buscar coincidencias
-    for match in re.finditer(patron_python, codigo, re.DOTALL | re.IGNORECASE):
-        bloques.append(("Python", match.group().strip()))
+    for linea in lineas:
+        linea_stripped = linea.strip()
 
-    for match in re.finditer(patron_sql, codigo, re.DOTALL | re.IGNORECASE):
-        bloques.append(("SQL", match.group().strip()))
+        # Detectores simples por línea
+        if re.search(r"\b(SELECT|INSERT|UPDATE|DELETE|CREATE|DROP|ALTER|JOIN|FROM|WHERE)\b", linea_stripped, re.IGNORECASE):
+            lenguaje = "SQL"
+        elif re.search(r"\bfunction\b|\b<-", linea_stripped):
+            lenguaje = "R"
+        elif re.search(r"\bdef\b|\bprint\b|:\s*$|\bimport\b", linea_stripped):
+            lenguaje = "Python"
+        else:
+            lenguaje = lenguaje_actual  # Continuación del mismo lenguaje
 
-    for match in re.finditer(patron_r, codigo, re.DOTALL | re.IGNORECASE):
-        bloques.append(("R", match.group().strip()))
+        if lenguaje != lenguaje_actual and actual:
+            bloques.append((lenguaje_actual, "\n".join(actual)))
+            actual = []
 
-    # Ordenar por aparición original (posición en el texto)
-    bloques_ordenados = sorted(bloques, key=lambda x: codigo.find(x[1]))
-    return bloques_ordenados
+        lenguaje_actual = lenguaje
+        actual.append(linea)
+
+    if actual:
+        bloques.append((lenguaje_actual, "\n".join(actual)))
+
+    return bloques
 
 
 
