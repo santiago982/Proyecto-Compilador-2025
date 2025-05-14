@@ -75,7 +75,7 @@ def analizar_python(codigo):
     # Análisis de SQL embebido
     sql_embebido = extraer_sql_embebido(codigo)
     if sql_embebido:
-        from analizador_sql import analizar_sql  # Asegúrate de importar el módulo correcto
+        from analizador_sql import analizar_sql  
         for sql_texto in sql_embebido:
             _, errores_sql = analizar_sql(sql_texto[1])
             errores.extend(["[SQL Embebido] " + e for e in errores_sql])
