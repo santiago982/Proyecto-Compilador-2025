@@ -24,7 +24,7 @@ FUNCIONES_BUILTIN_R = {
     # Librerías y datos
     "install.packages", "library", "require", "read.csv", "read.table", "write.csv", "data", "head", "tail",
     # SQL y limpieza
-    "sqldf", "tidyr", "dplyr", "tibble", "separate", "spread", "gather"
+    "sqldf", "tidyr", "dplyr", "tibble", "separate", "spread", "gather","readr"
 }
 
 LIBRERIAS_RECONOCIDAS = {
