@@ -53,10 +53,33 @@ def verificar_balance_parentesis(linea, idx, errores):
     if stack:
         errores.append(f"[Línea {idx}] Faltan símbolos de cierre para: {''.join(stack)}")
 
+
+# seccion de codigo para bloques de codigo de mas de una lineas
+def unir_bloques_multilinea(lineas):
+    bloques = []
+    bloque_actual = ''
+    par_balance = 0
+
+    for linea in lineas:
+        linea_sin_comentario = linea.split("#")[0]
+        par_balance += linea_sin_comentario.count('(') - linea_sin_comentario.count(')')
+        bloque_actual += linea + '\n'
+        if par_balance <= 0:
+            bloques.append(bloque_actual.strip())
+            bloque_actual = ''
+            par_balance = 0
+    if bloque_actual:
+        bloques.append(bloque_actual.strip())
+    return bloques
+
+
+
 def analizar_r(codigo):
     errores = []
     tokens = []
     lineas = codigo.strip().split('\n')
+    #bloques completos---- y no separados 
+    lineas = unir_bloques_multilinea(lineas)
 
     for idx, linea in enumerate(lineas, start=1):
         linea = linea.strip()
@@ -88,8 +111,17 @@ def analizar_r(codigo):
         # Verificar elementos tipo c(1 2 3)
         if re.search(r"c\(\s*\d+\s+\d+", linea):
             errores.append(f"[Línea {idx}] Puede faltar una coma entre los elementos de 'c()'.")
-
-        # Tokenización básica
+            
+        # verificar si faltan comas dntro de vectores Nombre = c("Ana" "Juan") y aunsencia de C para asignacion de vector .....   
+        
+        if re.search(r'=\s*\(\s*"[^"]+"\s+"[^"]+"', linea):
+           errores.append(f"[Línea {idx}] Falta la función 'c()' o hay elementos de texto sin comas.")
+        
+        # Detectar números o textos sin coma dentro de paréntesis (con o sin 'c')..........
+        if re.search(r'\(\s*(\d+\s+\d+|".+?"\s+".+?")', linea):
+           errores.append(f"[Línea {idx}] Puede faltar una coma entre los elementos dentro del paréntesis (verifica uso de 'c()').")                        
+             
+          # Tokenizacion básica R
         palabras = re.findall(r"[A-Za-z_][A-Za-z0-9_]*|[<>]=?|==|!=|%%|%/%|[*+^/\\(),;:{}[\]]|[-]+|<-|->|\d+\.?\d*|\".*?\"|'.*?'", linea)
 
         for palabra in palabras:
