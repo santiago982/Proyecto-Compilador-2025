@@ -3,7 +3,7 @@ from lenguaje_detector import detectar_lenguajes_embebidos
 from analizador_sql import analizar_sql
 from analizador_r import analizar_r
 from analizador_python import analizar_python
-from lema_bombeo import verificar_repeticiones
+from lema_bombeo import verificar_repeticiones,pertenece_a_lenguaje_regular,aplicar_lema_de_bombeo
 from explicador import explicar_codigo
 
 # ------------------------------------
@@ -61,38 +61,85 @@ else:
 if st.button("Compilar") and codigo:
     bloques = detectar_lenguajes_embebidos(codigo)
 
-    for idx, (lenguaje, bloque) in enumerate(bloques):
-        st.subheader(f"Bloque {idx+1}: Lenguaje detectado - {lenguaje}")
-        st.code(bloque)
+    # Constante del lema de bombeo
+N_CONSTANTE_BOMPEO = 10
 
-        if lenguaje == "Python":
-            tokens, errores = analizar_python(bloque)
-        elif lenguaje == "SQL":
-            tokens, errores = analizar_sql(bloque)
-        elif lenguaje == "R":
-            tokens, errores = analizar_r(bloque)
-        else:
-            tokens, errores = [], ["Lenguaje no soportado"]
+# Expresiones regulares para cada lenguaje (puedes ajustar según tu diseño)
+expresion_regular = {
+    "Python": r"^[\s\S]*$",  # Puedes poner una más específica si quieres
+    "SQL": r"(?i)^\s*(SELECT|INSERT|UPDATE|DELETE)\s+.*",
+    "R": r"^[\s\S]*<-\s*.*"  # Ejemplo muy simple
+}
 
-        repeticiones = verificar_repeticiones(bloque)
-        explicacion = explicar_codigo(bloque, lenguaje)
+st.title("🔍 Analizador Multilenguaje con Lema de Bombeo")
 
-        st.markdown("**Tokens reconocidos:**")
-        st.code(tokens)
+# Suponiendo que ya tienes tu lista de bloques y lenguajes detectados
+for idx, (lenguaje, bloque) in enumerate(bloques):
+    st.subheader(f"🧩 Bloque {idx + 1} - Lenguaje detectado: {lenguaje}")
+    st.code(bloque)
 
-        if errores:
-            st.markdown("**Errores detectados:**")
-            for err in errores:
-                st.error(err)
-        else:
-            st.success("No se encontraron errores de sintaxis o semántica.")
+    # --- Análisis léxico/sintáctico por lenguaje ---
+    if lenguaje == "Python":
+        tokens, errores = analizar_python(bloque)
+    elif lenguaje == "SQL":
+        tokens, errores = analizar_sql(bloque)
+    elif lenguaje == "R":
+        tokens, errores = analizar_r(bloque)
+    else:
+        tokens, errores = [], ["Lenguaje no soportado"]
 
-        if repeticiones:
-            st.warning("Repeticiones estructurales detectadas (Lema de Bombeo):")
-            for r in repeticiones:
-                st.text(r)
+    # --- Pertenece a lenguaje regular ---
+    pertenece = pertenece_a_lenguaje_regular(bloque.strip(), expresion_regular.get(lenguaje, r".*"))
 
+    # --- Lema de Bombeo formal ---
+    resultado_bombeo = aplicar_lema_de_bombeo(bloque.strip(), N_CONSTANTE_BOMPEO)
+
+    # --- Heurística de repeticiones estructurales ---
+    repeticiones = verificar_repeticiones(bloque)
+    
+    
+    explicacion = explicar_codigo(bloque, lenguaje)
+    
+
+    # --- Mostrar resultados ---
+    st.markdown("### 📌 Tokens reconocidos:")
+    st.code(tokens)
+
+    if errores:
+        st.markdown("### ❌ Errores detectados:")
+        for err in errores:
+            st.error(err)
+    else:
+        st.success("✅ No se encontraron errores de sintaxis o semántica.")
+
+    st.markdown("### 📐 Pertenencia a lenguaje regular:")
+    if pertenece:
+        st.success("✅ La cadena cumple con la expresión regular esperada.")
+    else:
+        st.warning("⚠️ La cadena NO pertenece al lenguaje definido por la expresión regular.")
+
+    st.markdown("### 🌀 Verificación estructural (heurística):")
+    if repeticiones:
+        for r in repeticiones:
+            st.warning(r)
+    else:
+        st.info("✅ No se detectaron repeticiones estructurales sospechosas.")
+
+    st.markdown("### 🔁 Análisis con el lema de bombeo:")
+    st.info(f"Longitud de cadena: {resultado_bombeo['longitud']} | Constante n: {resultado_bombeo['constante_n']}")
+    st.info(resultado_bombeo["resultado"])
+
+    if resultado_bombeo["uvz"]:
+        u, v, z = resultado_bombeo["uvz"]
+        st.markdown(f"**Descomposición encontrada** `w = uvz`")
+        st.code(f"u = '{u}'\nv = '{v}'\nz = '{z}'")
+
+        st.markdown("**🔄 Ejemplos con uvⁱz para i = 0, 1, 2:**")
+        for i, ejemplo in resultado_bombeo["ejemplos"]:
+            st.text(f"i = {i}: {ejemplo}")
+            
+            
         st.markdown("**Explicación del código:**")
         st.info(explicacion)
-else:
-    st.info("Escribe o carga un archivo para comenzar el análisis.")
+
+st.info("Carga un archivo o escribe código para comenzar el análisis.")
