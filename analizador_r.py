@@ -15,7 +15,7 @@ SIMBOLOS_R = {"(", ")", "{", "}", "[", "]", ",", ";"}
 
 FUNCIONES_BUILTIN_R = {
     # Básicas
-    "print", "cat", "mean", "sum", "min", "max", "length", "seq", "rep", "paste",
+    "view", "cat", "mean", "sum", "min", "max", "length", "seq", "rep", "paste",
     "c", "matrix", "data.frame", "list", "as.numeric", "as.character", "as.logical", "summary", "str", "class",
     # Manipulación
     "subset", "merge", "rbind", "cbind", "filter", "mutate", "select", "group_by", "arrange", "summarise",
