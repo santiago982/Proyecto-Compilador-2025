@@ -17,11 +17,12 @@ def detectar_lenguajes_embebidos(codigo):
         # Detectores simples por línea
         if re.search(r"\b(SELECT|INSERT|UPDATE|DELETE|CREATE|DROP|ALTER|JOIN|FROM|WHERE)\b", linea_stripped, re.IGNORECASE):
             lenguaje = "SQL"
-        elif re.search(r"\b(function|if|else|for|while|repeat|TRUE|FALSE|NULL|NA|print|library|return)\b", linea_stripped) \
+        elif re.search(r"\b(function|if|else|for|while|repeat|TRUE|FALSE|NULL|NA|view|library|return)\b", linea_stripped) \
             or "<-" in linea_stripped or "->" in linea_stripped or re.search(r"\bdbGetQuery\b|\bsqldf\b", linea_stripped):
             lenguaje = "R"
-        elif re.search(r"\bdef\b|\bprint\b|:\s*$|\bimport\b", linea_stripped):
+        elif re.search(r"\bdef\s+\w+\s*\(.*\)\s*:\b|\bprint\s*\(.*\)|f\".*?\"|f\'.*?\'|\bclass\s+\w+\s*:\b", linea_stripped):
             lenguaje = "Python"
+
         else:
             lenguaje = lenguaje_actual  # Continuación del mismo lenguaje
 
