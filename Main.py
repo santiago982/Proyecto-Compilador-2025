@@ -9,7 +9,7 @@ from explicador import explicar_codigo
 # ------------------------------------
 # INTERFAZ STREAMLIT PRINCIPAL ggg
 # ------------------------------------
-st.title("Simulador de Compilador Multilenguaje Embebido")
+st.title("Simulador de Compilador Multilenguaje R ,SQL Y PYTHON")
 
 # CSS para imagen fija al lado derecho
 st.markdown("""
@@ -46,7 +46,7 @@ st.markdown("""
 
 
 st.markdown("""
-Este simulador permite analizar código con sentencias embebidas en **Python**, **SQL**, **R** y más.
+Este simulador permite analizar código con sentencias  en **Python**, **SQL**, **R** .
 Puedes escribir directamente el código o subir un archivo `.txt`.
 """)
 
