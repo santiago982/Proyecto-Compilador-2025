@@ -10,7 +10,6 @@ PALABRAS_CLAVE_SQL = {
 }
 
 OPERADORES_SQL = {"=", ">", "<", ">=", "<=", "<>", "!=", "AND", "OR", "NOT"}
-
 SIMBOLOS_SQL = {"(", ")", ",", ";", "*"}
 
 TIPOS_SQL_VALIDOS = {
@@ -22,10 +21,11 @@ MODIFICADORES_SQL_VALIDOS = {
     "PRIMARY", "KEY", "AUTO_INCREMENT", "NOT", "NULL", "UNIQUE", "DEFAULT"
 }
 
+
 def dividir_sentencias_sql(codigo):
     bloques = []
     sentencia_actual = ""
-    
+
     for linea in codigo.strip().split("\n"):
         linea = linea.strip()
         if not linea:
@@ -34,13 +34,16 @@ def dividir_sentencias_sql(codigo):
         if ";" in linea:
             bloques.append(sentencia_actual.strip())
             sentencia_actual = ""
+
     if sentencia_actual.strip():
         bloques.append(sentencia_actual.strip())
     return bloques
 
+
 def sugerir_palabra(token):
     sugerencias = get_close_matches(token.upper(), PALABRAS_CLAVE_SQL, n=1)
     return sugerencias[0] if sugerencias else None
+
 
 def validar_columnas_create_table(sentencia, idx):
     errores = []
@@ -48,39 +51,43 @@ def validar_columnas_create_table(sentencia, idx):
     if not columnas_raw:
         errores.append(f"[Sentencia {idx}] No se encontraron columnas en CREATE TABLE.")
         return errores
-    
+
     columnas = columnas_raw[0].split(",")
-    
+
     for i, col in enumerate(columnas, 1):
         partes = col.strip().split()
         if len(partes) < 2:
             errores.append(f"[Sentencia {idx}] Columna {i} incompleta: '{col.strip()}'")
             continue
+
         nombre = partes[0]
         tipo = partes[1].upper()
+
         if "(" in tipo:
             tipo = tipo.split("(")[0]
         if tipo not in TIPOS_SQL_VALIDOS:
             errores.append(f"[Sentencia {idx}] Tipo de dato inválido en columna '{nombre}': '{partes[1]}'")
-        
+
         modificadores = [p.upper() for p in partes[2:]]
         for mod in modificadores:
             if mod not in MODIFICADORES_SQL_VALIDOS:
                 errores.append(f"[Sentencia {idx}] Modificador inválido en columna '{nombre}': '{mod}'")
-    
+
     return errores
+
 
 def analizar_sql(codigo):
     errores = []
     tokens = []
-    
     sentencias = dividir_sentencias_sql(codigo)
 
     for idx, sentencia in enumerate(sentencias, start=1):
         palabras = re.findall(r"[A-Za-z_][A-Za-z0-9_]*|[<>]=?|==|!=|[*(),;=]|'.*?'|\d+\.?\d*|\d+", sentencia)
         palabras_mayus = [p.upper() for p in palabras]
+
         tipo_sentencia = palabras_mayus[0] if palabras_mayus else ""
 
+        # Validaciones sintácticas básicas por tipo
         if tipo_sentencia == "SELECT":
             if "FROM" not in palabras_mayus:
                 errores.append(f"[Sentencia {idx}] SELECT sin cláusula FROM.")
@@ -104,12 +111,14 @@ def analizar_sql(codigo):
             if not any(clave in palabras_mayus for clave in ["SELECT", "INSERT", "UPDATE", "DELETE", "CREATE"]):
                 errores.append(f"[Sentencia {idx}] No parece una sentencia SQL válida.")
 
+        # Tokenización
         for palabra in palabras:
             palabra_mayus = palabra.upper()
+
             if palabra_mayus in PALABRAS_CLAVE_SQL:
                 tokens.append(("PALABRA_CLAVE", palabra_mayus, idx))
-            elif palabra in OPERADORES_SQL:
-                tokens.append(("OPERADOR", palabra, idx))
+            elif palabra_mayus in OPERADORES_SQL:
+                tokens.append(("OPERADOR", palabra_mayus, idx))
             elif palabra in SIMBOLOS_SQL:
                 tokens.append(("SIMBOLO", palabra, idx))
             elif re.match(r"^'.*'$", palabra):
@@ -117,14 +126,16 @@ def analizar_sql(codigo):
             elif re.match(r"^\d+(\.\d+)?$", palabra):
                 tokens.append(("NUMERO", palabra, idx))
             elif re.match(r"^[A-Za-z_][A-Za-z0-9_]*$", palabra):
+                # Verifica si el identificador se parece a una palabra clave mal escrita
+                if palabra_mayus not in PALABRAS_CLAVE_SQL:
+                    sugerencia = sugerir_palabra(palabra)
+                    if sugerencia and sugerencia != palabra_mayus:
+                        errores.append(f"[Sentencia {idx}] ¿Quisiste decir '{sugerencia}' en vez de '{palabra}'?")
                 tokens.append(("IDENTIFICADOR", palabra, idx))
             else:
-                sugerencia = sugerir_palabra(palabra)
-                if sugerencia:
-                    errores.append(f"[Sentencia {idx}] ¿Quisiste decir '{sugerencia}' en vez de '{palabra}'?")
-                else:
-                    errores.append(f"[Sentencia {idx}] Token no reconocido: {palabra}")
+                errores.append(f"[Sentencia {idx}] Token no reconocido: {palabra}")
 
+        # Verifica si termina en punto y coma
         if not sentencia.strip().endswith(";"):
             errores.append(f"[Sentencia {idx}] Falta punto y coma al final.")
 
