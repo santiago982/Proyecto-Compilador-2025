@@ -81,7 +81,7 @@ if st.button("Compilar") and codigo:
         st.code(tokens)
 
         if errores:
-            st.markdown("**Errores detectados:**")
+            st.markdown("**Errores detectados y sugerencias:**")
             for err in errores:
                 st.error(err)
         else:

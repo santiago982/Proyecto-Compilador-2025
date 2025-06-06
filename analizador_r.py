@@ -1,30 +1,23 @@
 import re
 from difflib import get_close_matches
 
-# Palabras clave y funciones comunes de R
+# Diccionarios que NO deben cambiar
 PALABRAS_CLAVE_R = {
     "if", "else", "for", "while", "repeat", "in", "function", "return",
     "break", "next", "TRUE", "FALSE", "NULL", "NA", "NA_integer_", "NA_real_", "NA_complex_", "NA_character_"
-    
 }
-
 
 OPERADORES_R = {"<-", "->", "=", "+", "-", "*", "/", "%%", "%/%", "^", "==", "!=", "<", ">", "<=", ">=", "&", "|", "!", ":"}
 
 SIMBOLOS_R = {"(", ")", "{", "}", "[", "]", ",", ";"}
 
 FUNCIONES_BUILTIN_R = {
-    # Básicas
     "view", "cat", "mean", "sum", "min", "max", "length", "seq", "rep", "paste",
     "c", "matrix", "data.frame", "list", "as.numeric", "as.character", "as.logical", "summary", "str", "class",
-    # Manipulación
     "subset", "merge", "rbind", "cbind", "filter", "mutate", "select", "group_by", "arrange", "summarise",
-    # Visualización
     "plot", "hist", "boxplot", "barplot", "ggplot", "aes", "geom_point", "geom_line", "geom_bar",
-    # Librerías y datos
     "install.packages", "library", "require", "read.csv", "read.table", "write.csv", "data", "head", "tail",
-    # SQL y limpieza
-    "sqldf", "tidyr", "dplyr", "tibble", "separate", "spread", "gather","readr"
+    "sqldf", "tidyr", "dplyr", "tibble", "separate", "spread", "gather", "readr"
 }
 
 LIBRERIAS_RECONOCIDAS = {
@@ -33,7 +26,7 @@ LIBRERIAS_RECONOCIDAS = {
 
 def sugerir_r(token):
     candidatos = PALABRAS_CLAVE_R.union(FUNCIONES_BUILTIN_R)
-    sugerencias = get_close_matches(token, candidatos, n=1)
+    sugerencias = get_close_matches(token, candidatos, n=1, cutoff=0.75)
     return sugerencias[0] if sugerencias else None
 
 def detectar_sql_embebido(linea):
@@ -53,13 +46,10 @@ def verificar_balance_parentesis(linea, idx, errores):
     if stack:
         errores.append(f"[Línea {idx}] Faltan símbolos de cierre para: {''.join(stack)}")
 
-
-# seccion de codigo para bloques de codigo de mas de una lineas
 def unir_bloques_multilinea(lineas):
     bloques = []
     bloque_actual = ''
     par_balance = 0
-
     for linea in lineas:
         linea_sin_comentario = linea.split("#")[0]
         par_balance += linea_sin_comentario.count('(') - linea_sin_comentario.count(')')
@@ -72,16 +62,14 @@ def unir_bloques_multilinea(lineas):
         bloques.append(bloque_actual.strip())
     return bloques
 
-
-
 def analizar_r(codigo):
     errores = []
     tokens = []
     lineas = codigo.strip().split('\n')
-    #bloques completos---- y no separados 
     lineas = unir_bloques_multilinea(lineas)
 
     for idx, linea in enumerate(lineas, start=1):
+        original_line = linea
         linea = linea.strip()
         if not linea:
             continue
@@ -91,37 +79,46 @@ def analizar_r(codigo):
         if not linea:
             continue
 
-        # Detectar SQL embebido
+        # SQL embebido
         if detectar_sql_embebido(linea):
             errores.append(f"[Línea {idx}] SQL embebido detectado. Usa el analizador SQL para esta sección.")
             tokens.append(("SQL_EMBEBIDO", linea, idx))
             continue
 
-        # Verificar paréntesis
         verificar_balance_parentesis(linea, idx, errores)
 
-        # Verificar comillas balanceadas
         if linea.count('"') % 2 != 0 or linea.count("'") % 2 != 0:
             errores.append(f"[Línea {idx}] Comillas desbalanceadas.")
 
-        # Verificar asignaciones tipo if( sin cierre )
         if re.match(r"if\s*\([^)]*$", linea):
             errores.append(f"[Línea {idx}] Condición 'if' incompleta o sin cierre de paréntesis.")
 
-        # Verificar elementos tipo c(1 2 3)
         if re.search(r"c\(\s*\d+\s+\d+", linea):
             errores.append(f"[Línea {idx}] Puede faltar una coma entre los elementos de 'c()'.")
-            
-        # verificar si faltan comas dntro de vectores Nombre = c("Ana" "Juan") y aunsencia de C para asignacion de vector .....   
-        
+
         if re.search(r'=\s*\(\s*"[^"]+"\s+"[^"]+"', linea):
-           errores.append(f"[Línea {idx}] Falta la función 'c()' o hay elementos de texto sin comas.")
-        
-        # Detectar números o textos sin coma dentro de paréntesis (con o sin 'c')..........
+            errores.append(f"[Línea {idx}] Falta la función 'c()' o hay elementos de texto sin comas.")
+
         if re.search(r'\(\s*(\d+\s+\d+|".+?"\s+".+?")', linea):
-           errores.append(f"[Línea {idx}] Puede faltar una coma entre los elementos dentro del paréntesis (verifica uso de 'c()').")                        
-             
-          # Tokenizacion básica R
+            errores.append(f"[Línea {idx}] Puede faltar una coma entre los elementos dentro del paréntesis (verifica uso de 'c()').")
+
+        # ERRORES NUEVOS agregados para reconocer
+
+        # 1. Asignación mal formada con '<' en vez de '<-'
+        if re.search(r'\w+\s*<\s*\w+', linea) and '<-' not in linea:
+            errores.append(f"[Línea {idx}] Posible error de asignación: usa '<-' en lugar de '<'.")
+
+        # 2. Detección y sugerencia para funciones mal escritas
+        funciones_posibles = re.findall(r'\b[A-Za-z_]+\b(?=\()', linea)
+        for funcion in funciones_posibles:
+            if funcion not in FUNCIONES_BUILTIN_R:
+                sugerencia = sugerir_r(funcion)
+                if sugerencia:
+                    errores.append(f"[Línea {idx}] Función '{funcion}()' no reconocida. ¿Quisiste decir '{sugerencia}()'?")
+                else:
+                    errores.append(f"[Línea {idx}] Función '{funcion}()' no reconocida.")
+
+        # Tokenización básica
         palabras = re.findall(r"[A-Za-z_][A-Za-z0-9_]*|[<>]=?|==|!=|%%|%/%|[*+^/\\(),;:{}[\]]|[-]+|<-|->|\d+\.?\d*|\".*?\"|'.*?'", linea)
 
         for palabra in palabras:
@@ -149,4 +146,6 @@ def analizar_r(codigo):
                     errores.append(f"[Línea {idx}] Token no reconocido: '{palabra}'")
 
     return tokens, errores
+
+
 
