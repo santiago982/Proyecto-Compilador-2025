@@ -20,8 +20,9 @@ def detectar_lenguajes_embebidos(codigo):
         elif re.search(r"\b(function|if|else|for|while|repeat|TRUE|FALSE|NULL|NA|view|library|return)\b", linea_stripped) \
             or "<-" in linea_stripped or "->" in linea_stripped or re.search(r"\bdbGetQuery\b|\bsqldf\b", linea_stripped):
             lenguaje = "R"
-        elif re.search(r"\bdef\s+\w+\s*\(.*\)\s*:\b|\bprint\s*\(.*\)|f\".*?\"|f\'.*?\'|\bclass\s+\w+\s*:\b", linea_stripped):
-            lenguaje = "Python"
+        elif re.search(r"\bdef\s+\w+\s*\(.*\)\s*:|\bclass\s+\w+\s*:|\bprint\s*\(.*\)|\breturn\b|\blambda\b|\bimport\b|\bfrom\b", linea_stripped):
+             lenguaje = "Python"
+
 
         else:
             lenguaje = lenguaje_actual  # Continuación del mismo lenguaje
