@@ -53,10 +53,10 @@ Puedes escribir directamente el código o subir un archivo `.txt`.
 codigo = ""
 archivo = st.file_uploader("Sube tu archivo de código (.txt)", type=["txt"])
 if archivo:
-    codigo = archivo.read().decode("utf-8")
-    st.text_area("Vista previa del archivo cargado:", value=codigo, height=200)
+    contenido_archivo = archivo.read().decode("utf-8")
+    codigo = st.text_area("📝 Edita tu código aquí antes de compilar:", value=contenido_archivo, height=300)
 else:
-    codigo = st.text_area("Escribe o pega tu código aquí:", height=200)
+    codigo = st.text_area("Escribe o pega tu código aquí:", height=300)
 
 if st.button("Compilar") and codigo:
     bloques = detectar_lenguajes_embebidos(codigo)
