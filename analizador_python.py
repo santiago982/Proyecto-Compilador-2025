@@ -44,7 +44,7 @@ def analizar_python(codigo):
     bloques = dividir_bloques_codigo(codigo)
 
     lenguaje_detectado = False
-
+# analsis lexico extrae las palabras clave ylas clasifica 
     for idx, bloque in enumerate(bloques, start=1):
         lineas = bloque.split('\n')
         for linea_num, linea in enumerate(lineas, start=1):

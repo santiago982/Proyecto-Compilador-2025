@@ -1,7 +1,7 @@
 import re
 from difflib import get_close_matches
 
-# Diccionarios que NO deben cambiar
+# Diccionarios 
 PALABRAS_CLAVE_R = {
     "if", "else", "for", "while", "repeat", "in", "function", "return",
     "break", "next", "TRUE", "FALSE", "NULL", "NA", "NA_integer_", "NA_real_", "NA_complex_", "NA_character_"
